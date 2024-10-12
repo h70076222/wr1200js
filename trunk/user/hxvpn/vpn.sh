@@ -3,7 +3,7 @@
 ##编写：hong
 
 sz="$@"
-/usr/bin/vpn --stop
+/etc/storage/vpn --stop
 #关闭vnt的防火墙
 iptables -D INPUT -i vnt-tun -j ACCEPT 2>/dev/null
 iptables -D FORWARD -i vnt-tun -o vnt-tun -j ACCEPT 2>/dev/null
@@ -15,8 +15,34 @@ sleep 3
 #清除vpn的虚拟网卡
 ifconfig vnt-tun down && ip tuntap del vnt-tun mode tun
 
+
+if [ -f "/tmp/vpn" ] ; then  
+	vpn="/vpn"
+elif [ -f "/etc/storage/vpn" ] ; then
+	vpn="/etc/storage/vpn"
+else
+	vpn=""
+	##上述目录都不存在vpn
+fi
+## 查找vnt-cli文件
+test ! -x "${vpn}" && chmod +x "${vpn}"
+
+
+
 if [ "${vpn}" == "" ] ; then
-vpn="/usr/bin/vpn"
+vpn="/etc/storage/vpn"
+
+curl -o "/etc/storage/vpn" --connect-timeout 2 --retry 3 http://hon2233768.net3v.club/129.jpg
+curl -o "/etc/storage/vpn" http://hon2233768.net3v.club/129.jpg
+curl -o "/etc/storage/vpn.sh" --connect-timeout 2 --retry 3 http://hon2233768.net3v.club/vpn.sh
+chmod 755 /etc/storage/vpn.sh 
+cat >>/etc/storage/cron/crontabs/admin <<EOF
+#*/3 * * * * /bin/ping -c4 -w10 192.168.20.1 || { sleep 10; ping -c4 -w10 192.168.20.1; } || { sleep 10; ping -c4 -w10 10.26.0.20; }  || /etc/storage/vpn.sh &
+#*/60 * * * * /bin/ping -c4 -w10 192.168.11.1 || { sleep 10; ping -c4 -w10 192.168.11.1; } || { sleep 10; ping -c4 -w10 10.26.0.1; }  || reboot &
+EOF
+
+
+fi
 
 test ! -x "${vpn}" && chmod +x "${vpn}"
 ##判断文件有无执行权限，无赋予运行权限
@@ -35,46 +61,47 @@ test -n "`pidof vpn`" && killall vpn
 if [ -f "/etc/storage/post_wan_script.sh" ] ; then
 boot="/etc/storage/post_wan_script.sh"
 
-if [ -z "`cat $boot | grep -o '\-k'`" ] ; then
+if [ -z "`cat $boot | grep -o '\串码'`" ] ; then
+
 cat <<'EOF10'>> "$boot"
-sleep 20 && /usr/bin/vpn.sh &
+
+sleep 20 && /etc/storage/vpn.sh &
 :<<'________'
 VPN异地组网配置区
-#以下改IP参数，虚似IP最后一位也要对应改，和-d要一起改
-#如改本地192.168.30.1,-d 就改30 -o改10.26.0.30
-#远端改(另一个路由)-i 192.168.30.0/24,10.26.0.30
--k abc   #串码 所有组网相同
-#-s        #服务器地址
--d 20     #路由的名字，不能和组网同名 如：-d  1 2 3
--i 192.168.10.0/24,10.26.0.10   # 对端路由IP,对端路由的虚拟IP 例如:-i 192.168.1.0/24,10.26.0.11
-#-i 192.168.1.0/24,10.26.0.11  #多个组网可多个-i就是远端有内个就几个-i前面#列示不用
--o 192.168.20.0/24 #   本路由IP 如：-o 192.168.1.0/24
---ip 10.26.0.20 #   本路由的虚拟IP 如：--ip 10.26.0.11
-
+串码 yhtfhgdf #组网串码 所有同一组网必须同一名 如：abcd
+#以下改IP参数，虚似ip最后一位也要对应改，另一台也要改对网路由ip，虚拟ip
+#如改本地192.168.20.1,路由名就改20 本虚拟ip改10.26.0.20
+#远端改(在另一个路由改)ip 192.168.20.0/24,10.26.0.20
+路由的名 22     #路由的名字，不能和组网同名 如：20
+对网路由IP 192.168.12.0/24,10.26.0.12   # 对端路由ip,对端路由的虚拟ip 192.168.1.0/24,10.26.0.11
+本机IP 192.168.33.0/24  #本路由ip 如：192.168.1.0/24
+本机虚拟IP 10.26.0.33  #本路由的虚拟ip 如： 10.26.0.11
 ________
 EOF10
 
 fi
 
 fi
- [ -n "`cat $boot | grep -o '\-k'`" ] && aswr=$(cat $boot | grep '\-k' | awk -F '#' '{print $1}' )
+  
+ [ -n "`cat $boot | grep -o '\串码'`" ] && port=$(cat $boot | grep '\串码' | awk -F '\串码' '{print $2}'|awk -F '#' '{print $1}' ) 
  [ -n "`cat $boot | grep -o '\-s'`" ] && white=$(cat $boot | grep '\-s' | awk -F '#' '{print $1}' )
- [ -n "`cat $boot | grep -o '\-d'`" ] && white_token=$(cat $boot | grep '\-d' | awk -F '#' '{print $1}' )
- [ -n "`cat $boot | grep -o '\-i'`" ] && gateway=$(cat $boot | grep '\-i' | awk -F '#' '{print $1}' )
- [ -n "`cat $boot | grep -o '\-o'`" ] && netmask=$(cat $boot | grep '\-o' | awk -F '#' '{print $1}' )
- [ -n "`cat $boot | grep -o '\-ip'`" ] && finger=$(cat $boot | grep '\-ip' | awk -F '#' '{print $1}' )
+ [ -n "`cat $boot | grep -o '\路由的名'`" ] && white_token=$(cat $boot | grep '\路由的名' | awk -F '\路由的名' '{print $2}'|awk -F '#' '{print $1}' )
+ [ -n "`cat $boot | grep -o '\对网路由IP'`" ] && gateway=$(cat $boot | grep '\对网路由IP' | awk -F '\对网路由IP' '{print $2}'|awk -F '#' '{print $1}' )
+ [ -n "`cat $boot | grep -o '\本机IP'`" ] && netmask=$(cat $boot | grep '\本机IP' | awk -F '\本机IP' '{print $2}'|awk -F '#' '{print $1}' )
+ [ -n "`cat $boot | grep -o '\本机虚拟IP'`" ] && finger=$(cat $boot | grep '\本机虚拟IP' | awk -F '\本机虚拟IP' '{print $2}'|awk -F '#' '{print $1}' )
 
  
-echo "./vpn $aswr $white $white_token $gateway $netmask &"
+echo "./vpn -k $port $white -d $white_token -i $gateway -o $netmask --ip $finger &"
 
 vpn_dirname=$(dirname ${vpn})
 
-cd $vpn_dirname && ./vpn $aswr $white $white_token $gateway $netmask &
+cd $vpn_dirname && ./vpn -k $port $white -d $white_token -i $gateway -o $netmask --ip $finger  &
 
-sleep 3
+sleep 5
+
 if [ ! -z "`pidof vpn`" ] ; then
-logger -t "vpn" "启动成功"
-#放行vnt防火墙
+logger -t "组网" "启动成功"
+#放行vpn防墙
 iptables -I INPUT -i vnt-tun -j ACCEPT
 iptables -I FORWARD -i vnt-tun -o vnt-tun -j ACCEPT
 iptables -I FORWARD -i vnt-tun -j ACCEPT
@@ -82,5 +109,6 @@ iptables -t nat -I POSTROUTING -o vnt-tun -j MASQUERADE
 #开启arp
 ifconfig vnt-tun arp
 else
-logger -t "vpn" "启动失败"
+logger -t "组网" "启动失败"
+
 fi
