@@ -3,7 +3,7 @@
 ##编写：hong
 
 sz="$@"
-/etc/storage/vpn --stop
+/usr/bin/vpn --stop
 #关闭vnt的防火墙
 iptables -D INPUT -i vnt-tun -j ACCEPT 2>/dev/null
 iptables -D FORWARD -i vnt-tun -o vnt-tun -j ACCEPT 2>/dev/null
@@ -16,26 +16,7 @@ sleep 3
 ifconfig vnt-tun down && ip tuntap del vnt-tun mode tun
 
 
-if [ -f "/tmp/vpn" ] ; then  
-	vpn="/vpn"
-elif [ -f "/etc/storage/vpn" ] ; then
-	vpn="/etc/storage/vpn"
-else
-	vpn=""
-	##上述目录都不存在vpn
-fi
-## 查找vnt-cli文件
-test ! -x "${vpn}" && chmod +x "${vpn}"
-
-
-
-if [ "${vpn}" == "" ] ; then
-vpn="/etc/storage/vpn"
-
-curl -o "/etc/storage/vpn" --connect-timeout 2 --retry 3 http://hon2233768.net3v.club/129.jpg
-curl -o "/etc/storage/vpn" http://hon2233768.net3v.club/129.jpg
-curl -o "/etc/storage/vpn.sh" --connect-timeout 2 --retry 3 http://hon2233768.net3v.club/vpn.sh
-chmod 755 /etc/storage/vpn.sh 
+ 
 cat >>/etc/storage/cron/crontabs/admin <<EOF
 #*/3 * * * * /bin/ping -c4 -w10 192.168.20.1 || { sleep 10; ping -c4 -w10 192.168.20.1; } || { sleep 10; ping -c4 -w10 10.26.0.20; }  || /etc/storage/vpn.sh &
 #*/60 * * * * /bin/ping -c4 -w10 192.168.11.1 || { sleep 10; ping -c4 -w10 192.168.11.1; } || { sleep 10; ping -c4 -w10 10.26.0.1; }  || reboot &
@@ -43,6 +24,9 @@ EOF
 
 
 fi
+
+if [ "${vpn}" == "" ] ; then
+vpn="/usr/bin/vpn"
 
 test ! -x "${vpn}" && chmod +x "${vpn}"
 ##判断文件有无执行权限，无赋予运行权限
@@ -65,7 +49,7 @@ if [ -z "`cat $boot | grep -o '\串码'`" ] ; then
 
 cat <<'EOF10'>> "$boot"
 
-sleep 20 && /etc/storage/vpn.sh &
+sleep 20 && /usr/bin/vpn.sh &
 :<<'________'
 VPN异地组网配置区
 串码 yhtfhgdf #组网串码 所有同一组网必须同一名 如：abcd
